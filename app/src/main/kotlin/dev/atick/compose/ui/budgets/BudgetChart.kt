@@ -1,0 +1,184 @@
+package dev.atick.compose.ui.budgets
+
+import android.graphics.drawable.GradientDrawable
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import dev.atick.compose.data.budgets.BudgetsScreenData
+import dev.atick.core.extensions.format
+import info.appdev.charting.charts.LineChart
+import info.appdev.charting.components.AxisBase
+import info.appdev.charting.components.Legend
+import info.appdev.charting.components.XAxis
+import info.appdev.charting.data.EntryFloat
+import info.appdev.charting.data.LineData
+import info.appdev.charting.data.LineDataSet
+import info.appdev.charting.formatter.IAxisValueFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+@Composable
+fun BudgetChart(
+    data: BudgetsScreenData,
+    modifier: Modifier = Modifier,
+) {
+    val dateFormatter = remember { SimpleDateFormat("MMM dd", Locale.getDefault()) }
+    val colorScheme = MaterialTheme.colorScheme
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(300.dp),
+        colors = CardDefaults.cardColors(),
+    ) {
+        AndroidView(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            factory = { context ->
+                LineChart(context).apply {
+                    // Enhanced chart setup
+                    description.isEnabled = false
+                    setExtraOffsets(8f, 16f, 8f, 16f) // Better padding
+
+                    // Improved legend styling
+                    legend.apply {
+                        isEnabled = true
+                        textColor = colorScheme.onSurface.toArgb()
+                        form = Legend.LegendForm.LINE
+                        textSize = 12f
+                        xEntrySpace = 20f
+                        yEntrySpace = 0f
+                        formSize = 16f
+                        formLineWidth = 2f
+                        horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
+                        verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
+                    }
+
+                    // Enhanced interaction
+                    setTouchEnabled(true)
+                    setScaleEnabled(true)
+                    isPinchZoom = true
+                    isDoubleTapToZoomEnabled = false
+
+                    // Enhanced X-Axis setup
+                    xAxis.apply {
+                        position = XAxis.XAxisPosition.BOTTOM
+                        valueFormatter = object : IAxisValueFormatter {
+                            override fun getFormattedValue(value: Float, axis: AxisBase?): String {
+                                return dateFormatter.format(Date(value.toLong()))
+                            }
+                        }
+                        labelRotationAngle = -45f
+                        isDrawGridLines = false
+                        textColor = colorScheme.onSurface.toArgb()
+                        axisLineColor = colorScheme.outline.toArgb()
+                        textSize = 10f
+                        granularity = 1f
+                        yOffset = 8f
+                    }
+
+                    // Enhanced Y-Axis setup
+                    axisLeft.apply {
+                        isDrawGridLines = true
+                        gridColor = colorScheme.outlineVariant.copy(alpha = 0.2f).toArgb()
+                        textColor = colorScheme.onSurface.toArgb()
+                        axisLineColor = colorScheme.outline.toArgb()
+                        textSize = 10f
+                        setLabelCount(6, true)
+                        valueFormatter = object : IAxisValueFormatter {
+                            override fun getFormattedValue(value: Float, axis: AxisBase?): String {
+                                return value.format(0) // No decimal places
+                            }
+                        }
+                    }
+                    axisRight.isEnabled = false
+
+                    // Animation setup
+                    animateX(1000)
+                    animateY(1000)
+                }
+            },
+            update = { chart ->
+                // Prepare expense line data with enhanced visuals
+                val expenseEntries = data.cumulativeExpenses.map { expense ->
+                    EntryFloat(expense.atTime.toFloat(), expense.amount.toFloat())
+                }
+
+                val budgetEntries = data.cumulativeExpenses.map { expense ->
+                    EntryFloat(expense.atTime.toFloat(), data.budget.amount?.toFloat() ?: 0f)
+                }
+
+                // Enhanced expense line dataset
+                val expenseDataSet = LineDataSet<EntryFloat>(expenseEntries.toMutableList(), "Expenses").apply {
+                    color = colorScheme.primary.toArgb()
+                    lineWidth = 2.5f
+                    isDrawCircles = true
+                    isDrawValues = false
+                    circleRadius = 4f
+                    circleColors = mutableListOf(colorScheme.primary.toArgb())
+                    // mode = LineDataSet.Mode.CUBIC_BEZIER
+
+                    // Enhanced gradient
+                    isDrawFilled = true
+                    fillDrawable = GradientDrawable(
+                        GradientDrawable.Orientation.TOP_BOTTOM,
+                        intArrayOf(
+                            colorScheme.primary.copy(alpha = 0.4f).toArgb(),
+                            colorScheme.primary.copy(alpha = 0f).toArgb(),
+                        ),
+                    )
+
+                    // Improved highlighting
+                    highLightColor = colorScheme.primary.copy(alpha = 0.7f).toArgb()
+
+                    highlightLineWidth = 1.5f
+                    isHorizontalHighlightIndicator = false
+
+                    // Enhanced circles
+                    isDrawCircleHoleEnabled = true
+                    circleHoleColor = colorScheme.surface.toArgb()
+                    circleHoleRadius = 2f
+                }
+
+                // Enhanced budget line dataset
+                val budgetDataSet = LineDataSet<EntryFloat>(budgetEntries.toMutableList(), "Budget Limit").apply {
+                    color = colorScheme.error.copy(alpha = 0.8f).toArgb()
+                    lineWidth = 2f
+                    isDrawCircles = false
+                    isDrawValues = false
+                    enableDashedLine(15f, 8f, 0f)
+                    isDrawFilled = false
+                    valueTextColor = colorScheme.onSurface.toArgb()
+
+                    // Enhanced highlighting
+                    highLightColor = colorScheme.error.copy(alpha = 0.7f).toArgb()
+                    highlightLineWidth = 1.5f
+                    isHorizontalHighlightIndicator = false
+                }
+
+                // Set the data with animation
+                if (data.budget.amount == null) {
+                    chart.data = LineData(expenseDataSet)
+                } else {
+                    chart.data = LineData(expenseDataSet, budgetDataSet)
+                }
+
+                // Refresh with animation
+                chart.animateX(1000)
+                chart.invalidate()
+            },
+        )
+    }
+}

@@ -1,0 +1,282 @@
+package dev.atick.compose.ui.expenses
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Payment
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.Store
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.atick.compose.R
+import dev.atick.compose.data.expenses.EditExpenseScreenData
+import dev.atick.compose.data.expenses.UiCategoryType
+import dev.atick.compose.data.expenses.UiPaymentStatus
+import dev.atick.compose.data.expenses.UiRecurringType
+import dev.atick.core.ui.components.JetpackButton
+import dev.atick.core.ui.components.JetpackOutlinedButton
+import dev.atick.core.ui.components.JetpackTextField
+import dev.atick.core.ui.utils.StatefulComposable
+
+@Composable
+internal fun EditExpenseRoute(
+    onBackClick: () -> Unit,
+    onShowSnackbar: suspend (String, String?) -> Boolean,
+    editExpenseViewModel: EditExpenseViewModel = hiltViewModel(),
+) {
+    val expenseState by editExpenseViewModel.expenseUiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        editExpenseViewModel.getExpense()
+    }
+
+    StatefulComposable(
+        state = expenseState,
+        onShowSnackbar = onShowSnackbar,
+    ) { expense ->
+        EditExpenseScreen(
+            expense = expense,
+            onAmountChange = editExpenseViewModel::setAmount,
+            onCategoryChange = editExpenseViewModel::setCategory,
+            onPaymentStatusChange = editExpenseViewModel::setPaymentStatus,
+            onRecurringTypeChange = editExpenseViewModel::setRecurringType,
+            onDescriptionChange = editExpenseViewModel::setDescription,
+            onToBeCancelledChange = editExpenseViewModel::setToBeCancelled,
+            onSave = editExpenseViewModel::saveExpense,
+            onCancel = onBackClick,
+        )
+    }
+}
+
+@Composable
+fun EditExpenseScreen(
+    expense: EditExpenseScreenData,
+    onAmountChange: (String) -> Unit,
+    onCategoryChange: (UiCategoryType) -> Unit,
+    onPaymentStatusChange: (UiPaymentStatus) -> Unit,
+    onRecurringTypeChange: (UiRecurringType) -> Unit,
+    onDescriptionChange: (String) -> Unit,
+    onToBeCancelledChange: (Boolean) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    var categoriesExpanded by remember { mutableStateOf(false) }
+    var paymentStatusExpanded by remember { mutableStateOf(false) }
+    var recurringTypeExpanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(expense.navigateBack) {
+        if (expense.navigateBack.getContentIfNotHandled() == true) {
+            onCancel()
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.edit_expense),
+            style = MaterialTheme.typography.headlineMedium,
+        )
+
+        // Amount
+        JetpackTextField(
+            value = expense.amount.toString(),
+            onValueChange = onAmountChange,
+            label = { Text(stringResource(R.string.amount)) },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = null) },
+        )
+
+        // Description
+        JetpackTextField(
+            value = expense.merchant,
+            onValueChange = onDescriptionChange,
+            label = { Text(stringResource(R.string.merchant)) },
+            leadingIcon = {
+                Icon(
+                    Icons.Default.Store,
+                    contentDescription = stringResource(R.string.merchant),
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // Category
+        ExposedDropdownMenuBox(
+            expanded = categoriesExpanded,
+            onExpandedChange = { categoriesExpanded = it },
+        ) {
+            JetpackTextField(
+                value = expense.category.name,
+                onValueChange = { onCategoryChange(UiCategoryType.valueOf(it)) },
+                readOnly = true,
+                label = { Text(stringResource(R.string.expense_category)) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Category,
+                        contentDescription = stringResource(R.string.expense_category),
+                    )
+                },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = false) },
+                modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            )
+
+            DropdownMenu(
+                expanded = categoriesExpanded,
+                onDismissRequest = { categoriesExpanded = false },
+            ) {
+                UiCategoryType.entries.forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(category.name) },
+                        onClick = {
+                            onCategoryChange(category)
+                            categoriesExpanded = false
+                        },
+                    )
+                }
+            }
+        }
+
+        // Payment Status
+        ExposedDropdownMenuBox(
+            expanded = paymentStatusExpanded,
+            onExpandedChange = { paymentStatusExpanded = it },
+        ) {
+            JetpackTextField(
+                value = expense.paymentStatus.name,
+                onValueChange = { onPaymentStatusChange(UiPaymentStatus.valueOf(it)) },
+                readOnly = true,
+                label = { Text(stringResource(R.string.payment_status)) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Payment,
+                        contentDescription = stringResource(R.string.payment_status),
+                    )
+                },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = false) },
+                modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            )
+
+            DropdownMenu(
+                expanded = paymentStatusExpanded,
+                onDismissRequest = { paymentStatusExpanded = false },
+            ) {
+                UiPaymentStatus.entries.forEach { status ->
+                    DropdownMenuItem(
+                        text = { Text(status.name) },
+                        onClick = {
+                            onPaymentStatusChange(status)
+                            paymentStatusExpanded = false
+                        },
+                    )
+                }
+            }
+        }
+
+        // Recurring Type
+        ExposedDropdownMenuBox(
+            expanded = recurringTypeExpanded,
+            onExpandedChange = { recurringTypeExpanded = it },
+        ) {
+            JetpackTextField(
+                value = expense.recurringType.name,
+                onValueChange = { onRecurringTypeChange(UiRecurringType.valueOf(it)) },
+                readOnly = true,
+                label = { Text(stringResource(R.string.recurring_type)) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Repeat,
+                        contentDescription = stringResource(R.string.recurring_type),
+                    )
+                },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = false) },
+                modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            )
+
+            DropdownMenu(
+                expanded = recurringTypeExpanded,
+                onDismissRequest = { recurringTypeExpanded = false },
+            ) {
+                UiRecurringType.entries.forEach { type ->
+                    DropdownMenuItem(
+                        text = { Text(type.name) },
+                        onClick = {
+                            onRecurringTypeChange(type)
+                            recurringTypeExpanded = false
+                        },
+                    )
+                }
+            }
+        }
+
+        // To Be Cancelled
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Checkbox(
+                checked = expense.toBeCancelled,
+                onCheckedChange = onToBeCancelledChange,
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.error,
+                    checkmarkColor = MaterialTheme.colorScheme.onError,
+                ),
+            )
+            Text(stringResource(R.string.to_be_cancelled))
+        }
+
+        // Buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            JetpackButton(
+                onClick = onSave,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(R.string.save))
+            }
+            JetpackOutlinedButton(
+                onClick = onCancel,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    }
+}

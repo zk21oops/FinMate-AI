@@ -1,0 +1,52 @@
+package dev.atick.storage.room.di
+
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import dev.atick.storage.room.data.BudgetDatabase
+import dev.atick.storage.room.data.ChatDatabase
+import dev.atick.storage.room.data.ExpenseDatabase
+import javax.inject.Singleton
+
+/**
+ * Dagger module for data access object.
+ */
+@Module(
+    includes = [
+        DatabaseModule::class,
+    ],
+)
+@InstallIn(SingletonComponent::class)
+object DaoModule {
+
+    /**
+     * Get the expense data access.
+     *
+     * @param expenseDatabase The database for expenses.
+     * @return The expense data access object.
+     */
+    @Singleton
+    @Provides
+    fun provideExpenseDao(expenseDatabase: ExpenseDatabase) = expenseDatabase.getExpenseDao()
+
+    /**
+     * Get the budget data access.
+     *
+     * @param budgetDatabase The database for budgets.
+     * @return The budget data access object.
+     */
+    @Singleton
+    @Provides
+    fun provideBudgetDao(budgetDatabase: BudgetDatabase) = budgetDatabase.getBudgetDao()
+
+    /**
+     * Get the chat data access.
+     *
+     * @param chatDatabase The database for chat messages.
+     * @return The chat data access object.
+     */
+    @Singleton
+    @Provides
+    fun provideChatDao(chatDatabase: ChatDatabase) = chatDatabase.getChatDao()
+}

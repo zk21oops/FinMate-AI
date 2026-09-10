@@ -1,0 +1,238 @@
+package dev.atick.compose.ui.chat
+
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.atick.compose.R
+import dev.atick.compose.data.chat.ChatScreenData
+import dev.atick.compose.data.chat.UiMessage
+import dev.atick.compose.data.chat.demoQuestions
+import dev.atick.compose.repository.chat.ChatRepository
+import dev.atick.core.ui.components.JetpackMultilineTextField
+import dev.atick.core.ui.utils.StatefulComposable
+import dev.atick.core.utils.MonthInfo
+import kotlinx.coroutines.delay
+
+@Composable
+internal fun ChatRoute(
+    monthInfo: MonthInfo,
+    onShowSnackbar: suspend (String, String?) -> Boolean,
+    chatViewModel: ChatViewModel = hiltViewModel(),
+) {
+    val chatUiState by chatViewModel.chatUiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(monthInfo) {
+        chatViewModel.initializeChat(monthInfo, ChatRepository.MAX_HISTORY_DEPTH)
+    }
+
+    StatefulComposable(
+        state = chatUiState,
+        onShowSnackbar = onShowSnackbar,
+    ) { chatScreenData ->
+        ChatScreen(
+            chatScreenData,
+            chatViewModel::onNewMessageUpdate,
+            chatViewModel::onSendMessage,
+        )
+    }
+}
+
+@Composable
+private fun ChatScreen(
+    chatScreenData: ChatScreenData,
+    onNewMessageUpdate: (String) -> Unit,
+    onSendMessage: () -> Unit,
+) {
+    val focusManager = LocalFocusManager.current
+
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(chatScreenData.messages.size) {
+        delay(100) // Small delay for smoother animation
+        listState.animateScrollToItem(
+            index = 0,
+            scrollOffset = 0,
+        )
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = {
+                            focusManager.clearFocus()
+                        },
+                    )
+                },
+            reverseLayout = true,
+        ) {
+            items(chatScreenData.messages.reversed(), key = { it.id }) { message ->
+                ChatMessageItem(
+                    message,
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .animateItem(),
+                )
+                // Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+
+        val demoQuestionsTexts = demoQuestions.map { stringResource(it) }
+
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            item {
+                Spacer(modifier = Modifier.width(16.dp))
+            }
+            items(demoQuestionsTexts) {
+                AssistChip(
+                    label = { Text(it) },
+                    onClick = {
+                        onNewMessageUpdate(it)
+                        onSendMessage()
+                    },
+                )
+            }
+        }
+        JetpackMultilineTextField(
+            value = chatScreenData.newMessage.value,
+            onValueChange = onNewMessageUpdate,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            label = { Text(stringResource(id = R.string.type_message)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.ChatBubble,
+                    contentDescription = stringResource(id = R.string.message),
+                )
+            },
+            trailingIcon = {
+                IconButton(
+                    onClick = {
+                        onSendMessage.invoke()
+                    },
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = stringResource(id = R.string.send_message),
+                    )
+                }
+            },
+        )
+    }
+}
+
+@Composable
+fun ChatMessageItem(message: UiMessage, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = if (message.isFromUser) Arrangement.End else Arrangement.Start,
+    ) {
+        if (!message.isFromUser) {
+            Surface(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+            ) {
+                Icon(
+                    modifier = Modifier.padding(8.dp),
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = "Message",
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+
+        Surface(
+            shape = RoundedCornerShape(
+                topStart = if (message.isFromUser) 16.dp else 0.dp,
+                topEnd = if (message.isFromUser) 0.dp else 16.dp,
+                bottomStart = 16.dp,
+                bottomEnd = 16.dp,
+            ),
+            color = if (message.isFromUser) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.tertiaryContainer
+            },
+            tonalElevation = 1.dp,
+            modifier = Modifier.weight(1f),
+        ) {
+            Text(
+                text = message.text,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                color = if (message.isFromUser) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                },
+            )
+        }
+
+        if (message.isFromUser) {
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Surface(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape),
+                color = MaterialTheme.colorScheme.primaryContainer,
+            ) {
+                Icon(
+                    modifier = Modifier.padding(8.dp),
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Message",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+        }
+    }
+}

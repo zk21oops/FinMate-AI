@@ -1,0 +1,75 @@
+package dev.atick.compose.navigation
+
+import androidx.annotation.StringRes
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Subscriptions
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.outlined.PieChart
+import androidx.compose.material.icons.outlined.Receipt
+import androidx.compose.material.icons.outlined.Subscriptions
+import androidx.compose.ui.graphics.vector.ImageVector
+import dev.atick.compose.R
+import dev.atick.compose.navigation.analysis.Analysis
+import dev.atick.compose.navigation.budgets.Budgets
+import dev.atick.compose.navigation.chat.Chat
+import dev.atick.compose.navigation.expenses.Expenses
+import dev.atick.compose.navigation.subscriptions.Subscriptions
+import kotlin.reflect.KClass
+
+/**
+ * Enum class representing top-level destinations in a navigation system.
+ *
+ * @property selectedIcon The selected icon associated with the destination.
+ * @property unselectedIcon The unselected icon associated with the destination.
+ * @property iconTextId The resource ID for the icon's content description text.
+ * @property titleTextId The resource ID for the title text.
+ * @property route The route associated with the destination.
+ */
+enum class TopLevelDestination(
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
+    @StringRes val iconTextId: Int,
+    @StringRes val titleTextId: Int,
+    val route: KClass<*>,
+) {
+    EXPENSES(
+        selectedIcon = Icons.Filled.Receipt,
+        unselectedIcon = Icons.Outlined.Receipt,
+        iconTextId = R.string.expenses,
+        titleTextId = R.string.expenses,
+        route = Expenses::class,
+    ),
+    ANALYSIS(
+        selectedIcon = Icons.Filled.PieChart,
+        unselectedIcon = Icons.Outlined.PieChart,
+        iconTextId = R.string.analysis,
+        titleTextId = R.string.analysis,
+        route = Analysis::class,
+    ),
+    BUDGETS(
+        selectedIcon = Icons.Filled.Calculate,
+        unselectedIcon = Icons.Outlined.Calculate,
+        iconTextId = R.string.budgets,
+        titleTextId = R.string.budgets,
+        route = Budgets::class,
+    ),
+    SUBSCRIPTIONS(
+        selectedIcon = Icons.Filled.Subscriptions,
+        unselectedIcon = Icons.Outlined.Subscriptions,
+        iconTextId = R.string.subscriptions,
+        titleTextId = R.string.subscriptions,
+        route = Subscriptions::class,
+    ),
+    CHAT(
+        selectedIcon = Icons.Filled.AutoAwesome,
+        unselectedIcon = Icons.Outlined.AutoAwesome,
+        iconTextId = R.string.chat,
+        titleTextId = R.string.chat,
+        route = Chat::class,
+    ),
+}

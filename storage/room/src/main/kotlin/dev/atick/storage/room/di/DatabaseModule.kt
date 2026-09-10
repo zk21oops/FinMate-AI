@@ -1,0 +1,79 @@
+package dev.atick.storage.room.di
+
+import android.content.Context
+import androidx.room.Room
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import dev.atick.storage.room.data.BudgetDatabase
+import dev.atick.storage.room.data.ChatDatabase
+import dev.atick.storage.room.data.ExpenseDatabase
+import javax.inject.Singleton
+
+/**
+ * Dagger module for database.
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+object DatabaseModule {
+
+    private const val EXPENSE_DATABASE_NAME = "dev.atick.expense.room"
+    private const val BUDGET_DATABASE_NAME = "dev.atick.budget.room"
+    private const val CHAT_DATABASE_NAME = "dev.atick.chat.room"
+
+    /**
+     * Get the database for Expense.
+     *
+     * @param appContext The application context.
+     * @return The database for Expense.
+     */
+    @Singleton
+    @Provides
+    fun provideExpenseDatabase(
+        @ApplicationContext appContext: Context,
+    ): ExpenseDatabase {
+        return Room.databaseBuilder(
+            appContext,
+            ExpenseDatabase::class.java,
+            EXPENSE_DATABASE_NAME,
+        ).fallbackToDestructiveMigration(false).build()
+    }
+
+    /**
+     * Get the database for Budget.
+     *
+     * @param appContext The application context.
+     * @return The database for Budget.
+     */
+    @Singleton
+    @Provides
+    fun provideBudgetDatabase(
+        @ApplicationContext appContext: Context,
+    ): BudgetDatabase {
+        return Room.databaseBuilder(
+            appContext,
+            BudgetDatabase::class.java,
+            BUDGET_DATABASE_NAME,
+        ).fallbackToDestructiveMigration(false).build()
+    }
+
+    /**
+     * Get the database for Chat.
+     *
+     * @param appContext The application context.
+     * @return The database for Chat.
+     */
+    @Singleton
+    @Provides
+    fun provideChatDatabase(
+        @ApplicationContext appContext: Context,
+    ): ChatDatabase {
+        return Room.databaseBuilder(
+            appContext,
+            ChatDatabase::class.java,
+            CHAT_DATABASE_NAME,
+        ).fallbackToDestructiveMigration(false).build()
+    }
+}
