@@ -3,27 +3,27 @@
 # ... PROJECT ...
 java = "21"
 kotlin = "2.3.21"
-androidGradlePlugin = "9.3.2"
+androidGradlePlugin = "9.4.1"
 gmsPlugin = "4.5.0"
-ksp = "2.3.11"
+ksp = "2.3.12"
 dokka = "2.2.0"
 dokkaMermaid = "0.6.0"
 secrets = "2.0.1"
 
 # ... CORE:ANDROID ...
-androidxCore = "1.19.0"
+androidxCore = "1.19.1"
 kotlinxCoroutines = "1.10.2"
 kotlinxDatetime = "0.7.1-0.6.x-compat"
 kotlinxSerializationJson = "1.11.0"
 timber = "5.0.1"
 
 # ... CORE:UI ...
-androidxNavigation = "2.10.0"
-androidxFragment = "1.9.0"
+androidxNavigation = "2.10.2"
+androidxFragment = "1.9.1"
 androidxAppCompat = "1.8.0"
 androidxActivity = "1.13.0"
 androidxLifecycle = "2.11.0"
-androidxComposeBom = "2026.08.00"
+androidxComposeBom = "2026.09.00"
 androidxComposeCompiler = "1.5.15"
 androidxCoreSplashscreen = "1.2.0"
 androidxHiltNavigationCompose = "1.4.0"
@@ -39,12 +39,12 @@ coil = "2.7.0"
 androidxDataStore = "1.2.1"
 
 # ... STORAGE:ROOM ...
-room = "2.8.4"
+room = "2.8.5"
 
 # ... AUTH ...
 playServicesAuth = "22.0.0"
 androidxCredentials = "1.6.0"
-identityGoogleId = "1.2.0"
+identityGoogleId = "1.2.1"
 
 # ... FIREBASE ...
 firebaseBom = "34.18.0"
@@ -55,7 +55,7 @@ daggerHilt = "2.60.1"
 daggerHiltExt = "1.4.0"
 
 # ... Open Source Licenses ...
-googleOss = "17.5.1"
+googleOss = "17.5.2"
 googleOssPlugin = "0.13.0"
 
 # ... Billing ...
@@ -65,7 +65,7 @@ playBilling = "9.1.0"
 generativeai = "0.9.0"
 
 # ... WORK_MANAGER ...
-workVersion = "2.11.2"
+workVersion = "2.12.0"
 
 # ... MPAndroidChart ...
 androidchartVersion = "5.2.3"
